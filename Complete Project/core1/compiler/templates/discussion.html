@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discussion</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            padding: 20px;
+            background-color:  rgb(241, 229, 229);;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #comment-form {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .comment {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .comment p {
+            margin: 0;
+        }
+        .comment small {
+            display: block;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .comment-buttons {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        .edit-form {
+            display: none;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            animation: slideDown 0.5s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+    </style>
+</head>
+<body >
+
+    <h2 class="text-center">Discussion</h2>
+    <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+
+   <br><br>
+
+    <!-- Display all comments -->
+    <div id="comments-container" >
+        {% for comment in comments %}
+        <div class="comment p-3" id="comment-{{ comment.id }}">
+            <p><strong>{{ comment.user.username }}</strong>: <span id="content-{{ comment.id }}">{{ comment.content }}</span></p>
+            <small>{{ comment.created_at }}</small>
+            {% if comment.user == request.user %}
+            <div class="comment-buttons">
+                <button class="btn btn-sm btn-warning" onclick="showEditForm({{ comment.id }})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteComment({{ comment.id }})">Delete</button>
+            </div>
+
+            <!-- Hidden Edit Form -->
+            <div class="edit-form" id="edit-form-{{ comment.id }}">
+                <textarea id="edit-content-{{ comment.id }}" class="form-control">{{ comment.content }}</textarea>
+                <button class="btn btn-success btn-sm mt-2" onclick="editComment({{ comment.id }})">Save</button>
+                <button class="btn btn-secondary btn-sm mt-2" onclick="hideEditForm({{ comment.id }})">Cancel</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if request.user.is_authenticated %}
+
+     <!-- Form to submit a new comment -->
+     <form id="comment-form" class="mb-4">
+        {% csrf_token %}
+        <textarea name="content" id="comment-content" class="form-control" rows="4" placeholder="Enter your comment"></textarea>
+        <button type="submit" class="btn btn-primary mt-2 w-100">Post Comment</button>
+    </form>
+    {% else %}
+     <a href="{% url 'login' %}" style="text-decoration: none;"> 🔒 Login Required: You need to log in to make comments. 😊</a>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById('comment-form').onsubmit = function(event) {
+            event.preventDefault();
+            var content = document.getElementById('comment-content').value;
+
+            fetch("{% url 'discussion' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'content=' + encodeURIComponent(content)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    var commentHTML = `<div class="comment p-3" id="comment-${data.comment_id}">
+                        <p><strong>${data.username}</strong>: <span id="content-${data.comment_id}">${data.content}</span></p>
+                        <small>Just now</small>
+                        <div class="comment-buttons">
+                            <button class="btn btn-sm btn-warning" onclick="showEditForm(${data.comment_id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteComment(${data.comment_id})">Delete</button>
+                        </div>
+                        <div class="edit-form" id="edit-form-${data.comment_id}" style="display: none;">
+                            <textarea id="edit-content-${data.comment_id}" class="form-control">${data.content}</textarea>
+                            <button class="btn btn-success btn-sm mt-2" onclick="editComment(${data.comment_id})">Save</button>
+                            <button class="btn btn-secondary btn-sm mt-2" onclick="hideEditForm(${data.comment_id})">Cancel</button>
+                        </div>
+                    </div>`;
+                    document.getElementById('comments-container').innerHTML = commentHTML + document.getElementById('comments-container').innerHTML;
+                    document.getElementById('comment-content').value = '';
+                }
+            });
+        };
+
+        // Show edit form
+        function showEditForm(commentId) {
+            document.getElementById('edit-form-' + commentId).style.display = 'block';
+        }
+
+        // Hide edit form
+        function hideEditForm(commentId) {
+            document.getElementById('edit-form-' + commentId).style.display = 'none';
+        }
+
+        // Edit comment
+        function editComment(commentId) {
+            var newContent = document.getElementById('edit-content-' + commentId).value;
+            if (newContent.trim() !== "") {
+                fetch(`/comment/edit/${commentId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: 'content=' + encodeURIComponent(newContent)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('content-' + commentId).innerText = data.content;
+                        hideEditForm(commentId);
+                    }
+                });
+            }
+        }
+
+        // Delete comment
+        function deleteComment(commentId) {
+            if (confirm("Are you sure you want to delete this comment?")) {
+                fetch(`/comment/delete/${commentId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('comment-' + commentId).remove();
+                    }
+                });
+            }
+        }
+    </script>
+
+</body>
+</html>

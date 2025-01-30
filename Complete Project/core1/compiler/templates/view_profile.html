@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background-color: rgb(241, 229, 229);            
+        }
+        .profile-container {
+            max-width: 450px;
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        .profile-container img {
+            max-width: 80px;
+            border-radius: 50%;
+        }
+        .button-container a {
+            margin: 5px;
+        }
+        .chart-container {
+            width: 200px;
+            height: 200px;
+            margin: auto;
+        }
+        h3{
+            font-size: 15px;
+        }
+        h1 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <br>
+    <h1 class="text-center">{{ user.username }}'s Profile</h1>
+    <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+
+    <div class="profile-container">
+       
+
+        {% if profile.profile_pic %}
+            <img src="{{ profile.profile_pic.url }}" alt="Profile Picture">
+        {% else %}
+            <p>No profile picture uploaded</p>
+        {% endif %}
+
+        <br><br>
+        <h2 style="font-size: 30px;"> {{ user.username }}</h2>
+        <p> {{ user.email }}</p>
+
+        <hr>
+        <!-- Pie Chart Section -->
+        <h3>Contest Attempt Statistics</h3>
+        <div class="chart-container">
+            <canvas id="contestPieChart"></canvas>
+        </div>
+
+        <button id="toggleLeaderboardChartBtn" class="btn btn-primary mt-3" onclick="toggleLeaderboardChart()">Show Leaderboard Stats</button>
+
+        <br><br>
+        <div id="leaderboardPieChartContainer" style="display:none;">
+            <h3>Leaderboard Contest Stats</h3>
+            <div class="chart-container">
+                <canvas id="leaderboardPieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="button-container mt-3">
+            <a href="{% url 'update_profile' profile.id %}" class="btn btn-success">Update Profile</a>
+            <a href="{% url 'delete_profile' profile.id %}" class="btn btn-danger">Delete Profile</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctxProfile = document.getElementById('contestPieChart').getContext('2d');
+    const contestData = {
+        labels: ['Attempted', 'Unattempted', 'Passed', 'Failed'],
+        datasets: [{
+            label: 'Contest Participation Stats',
+            data: [{{ attempted }}, {{ unattempted }}, {{ passed }}, {{ failed }}],  
+            backgroundColor: ['#36A2EB', '#FF6384', '#4CAF50', '#FFCD56'],
+            borderWidth: 1
+        }]
+    };
+
+    new Chart(ctxProfile, {
+        type: 'pie',
+        data: contestData,
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    function toggleLeaderboardChart() {
+        const leaderboardContainer = document.getElementById('leaderboardPieChartContainer');
+        const leaderboardChartBtn = document.getElementById('toggleLeaderboardChartBtn');
+        
+        if (leaderboardContainer.style.display === "none") {
+            leaderboardContainer.style.display = "block";
+            leaderboardChartBtn.innerText = "Hide Leaderboard Stats";
+            createLeaderboardChart();
+        } else {
+            leaderboardContainer.style.display = "none";
+            leaderboardChartBtn.innerText = "Show Leaderboard Stats";
+        }
+    }
+
+    function createLeaderboardChart() {
+        const ctxLeaderboard = document.getElementById('leaderboardPieChart').getContext('2d');
+        const leaderboardData = {
+            labels: ['Attempted', 'Unattempted'],
+            datasets: [{
+                label: 'Leaderboard Participation Stats',
+                data: [{{ attempted }}, {{ unattempted }}],  
+                backgroundColor: ['#36A2EB', '#FF6384'],
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(ctxLeaderboard, {
+            type: 'pie',
+            data: leaderboardData,
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+</script>
+
+<!-- Bootstrap JS (Optional, for better interactions) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

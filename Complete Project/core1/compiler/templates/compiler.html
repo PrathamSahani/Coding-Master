@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Code Compiler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+    <style>
+        .CodeMirror {
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #output, #input {
+            min-height: 120px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #343a40;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .select-container {
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-control {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body >
+    <br><a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+
+    <div class="container mt-5">
+        
+        <div class="header">
+            <h2 style="font-family: Verdana, Geneva, Tahoma, sans-serif; font-weight:bold;">Online Code Compiler</h2>
+            <p class="text-muted">Write, test, and run code online with ease</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 select-container">
+                <select id="language" class="form-select">
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <textarea id="code" class="form-control" placeholder="Write your code here..."></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <h4>Input:</h4>
+                <textarea id="input" class="form-control" rows="4" placeholder="Enter your program input here..."></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12 text-center">
+                <button id="runBtn" class="btn btn-primary px-5">Run Code</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h4>Output:</h4>
+                <pre id="output" class="form-control"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script>
+        let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+            lineNumbers: true,
+            mode: "python",
+            theme: "monokai",
+            indentUnit: 4,
+            indentWithTabs: false,
+        });
+
+        document.getElementById("language").addEventListener("change", function() {
+            let language = this.value;
+            let mode = language === "python" ? "python" : "text/x-c++src";
+            editor.setOption("mode", mode);
+            
+            // Set default code based on language
+            if (language === "python") {
+                editor.setValue("# Example: Program that takes input\nname = input('Enter your name: ')\nprint(f'Hello, {name}!')");
+            } else if (language === "java") {
+                editor.setValue("import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        System.out.print(\"Enter your name: \");\n        String name = scanner.nextLine();\n        System.out.println(\"Hello, \" + name + \"!\");\n    }\n}");
+            } else if (language === "cpp") {
+                editor.setValue("#include <iostream>\n#include <string>\n\nint main() {\n    std::string name;\n    std::cout << \"Enter your name: \";\n    std::getline(std::cin, name);\n    std::cout << \"Hello, \" << name << \"!\" << std::endl;\n    return 0;\n}");
+            }
+        });
+
+        document.getElementById("runBtn").addEventListener("click", function() {
+            const language = document.getElementById("language").value;
+            const code = editor.getValue();
+            const input = document.getElementById("input").value;
+            const output = document.getElementById("output");
+            
+            output.textContent = "Running...";
+            
+            fetch("", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: `language=${encodeURIComponent(language)}&code=${encodeURIComponent(code)}&input=${encodeURIComponent(input)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                output.textContent = data.result;
+            })
+            .catch(error => {
+                output.textContent = "Error: " + error;
+            });
+        });
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.getElementById("language").dispatchEvent(new Event('change'));
+    </script>
+</body>
+</html>

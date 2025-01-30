@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Participate in Question</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.10/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.10/theme/dracula.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 960px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-body {
+            padding: 2rem;
+        }
+        .card-title {
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        .toggle-content {
+            margin-top: 1rem;
+        }
+        .btn {
+            font-weight: bold;
+        }
+        .toggle-btn {
+            transition: transform 0.3s;
+        }
+        .toggle-btn:hover {
+            transform: scale(1.05);
+        }
+        .card-body code {
+            background-color: #f5f5f5;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .results-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .horizontal-info .col-md-6 {
+            padding-right: 10px;
+        }
+        h1 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+    </style>
+</head>
+<body style="background-color: rgb(241, 229, 229);;">
+
+    <div class="container mt-5">
+        <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+
+        <h1 class="text-center mb-4">{{ question.title }}</h1>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row horizontal-info">
+                    <div class="col-md-6">
+                        <p><strong>Difficulty:</strong> {{ question.get_difficulty_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Problem Tag:</strong> {{ question.problem_tag }}</p>
+                    </div>
+                </div>
+                <p class="text-muted">{{ question.description }}</p>
+            </div>
+        </div>
+
+        <!-- Language Selection Dropdown -->
+        <div class="mb-4">
+            <label for="language" class="form-label"><strong>Select Language:</strong></label>
+            <select name="language" id="language" class="form-select" required>
+                <option value="" disabled selected>Select a language</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+            </select>
+        </div>
+
+        <!-- Code Editor Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Edit Code</h5>
+                <textarea id="code" class="d-none">{{ question.base_code }}</textarea>
+                <div id="codeEditor" class="border rounded" style="min-height: 200px;"></div>
+                <button id="runBtn" class="btn btn-primary mt-3 w-100">Run Code</button>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="submitBtn" class="btn btn-success mt-3 w-100">Submit Code</button>
+
+        <!-- Test Cases Section -->
+        <div class="row mt-4">
+            {% for test_case in test_cases %}
+                <div class="col-md-3 mb-3">
+                    <div class="card results-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Test Case {{ forloop.counter }}</h5>
+                            <button class="btn btn-secondary w-100 toggle-btn" 
+                                    data-input="{{ test_case.input_data }}" 
+                                    data-output="{{ test_case.expected_output }}">
+                                Show 
+                            </button>
+                            <div class="mt-3 d-none toggle-content">
+                                <p><strong>Input:</strong> <code>{{ test_case.input_data }}</code></p>
+                                <p><strong>Output:</strong> <code>{{ test_case.expected_output }}</code></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div id="results" class="mt-4"></div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.10/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.10/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.10/mode/clike/clike.min.js"></script>
+
+    <script>
+        let currentLanguage = 'python'; 
+
+        // Initialize CodeMirror Editor
+        const editor = CodeMirror(document.getElementById('codeEditor'), {
+            value: document.getElementById('code').value.trim(),
+            mode: "python",
+            theme: "dracula",
+            lineNumbers: true,
+            indentUnit: 4,
+            tabSize: 4
+        });
+
+        // Language selection handling
+        document.getElementById('language').addEventListener('change', function() {
+            currentLanguage = this.value;
+            let mode = "python";
+            if (currentLanguage === 'java' || currentLanguage === 'cpp') {
+                mode = "text/x-c++src";
+            }
+            editor.setOption("mode", mode);
+        });
+
+        document.querySelectorAll('.toggle-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                content.classList.toggle('d-none');
+            });
+        });
+
+        // Run code functionality
+        document.getElementById("runBtn").addEventListener("click", function () {
+            const code = editor.getValue();
+            const language = document.getElementById('language').value;
+        
+            if (!language) {
+                alert("Please select a programming language.");
+                return;
+            }
+        
+            fetch("", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: `code=${encodeURIComponent(code)}&language=${encodeURIComponent(language)}&is_submit=false`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+        
+                let resultsDiv = document.getElementById("results");
+                resultsDiv.innerHTML = '<h4>Results</h4>';
+                data.results.forEach(result => {
+                    let statusColor = result.status === 'pass' ? 'text-success' : 'text-danger';
+                    resultsDiv.innerHTML += `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <p><strong>Input:</strong> <code>${result.input}</code></p>
+                                <p><strong>Expected Output:</strong> <code>${result.expected_output}</code></p>
+                                <p><strong>Actual Output:</strong> <code>${result.actual_output}</code></p>
+                                <p><strong>Status:</strong> <span class="${statusColor}">${result.status.toUpperCase()}</span></p>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        });
+
+        // CSRF token retrieval
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.getElementById("submitBtn").addEventListener("click", function () {
+            const code = editor.getValue();
+            const language = document.getElementById('language').value;
+        
+            if (!language) {
+                alert("Please select a programming language.");
+                return;
+            }
+        
+            fetch("", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: `code=${encodeURIComponent(code)}&language=${encodeURIComponent(language)}&is_submit=true`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                alert("Submission successful!");
+            });
+        });
+    </script>
+</body>
+</html>

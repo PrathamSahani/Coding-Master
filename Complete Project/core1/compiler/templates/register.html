@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<style>
+    body {
+        background-color: rgb(241, 229, 229);
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+
+    .page-title {
+        text-align: center;
+        font-size: 2em;
+        color: rgb(123, 114, 114);
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .register-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .register-form {
+        max-width: 500px;
+        width: 100%;
+        padding: 30px;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .btn-submit {
+        background-color: rgb(19, 96, 19);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 1.1em;
+    }
+</style>
+
+<body>
+
+    <br>
+    <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+    <div class="register-container">
+        <form method="POST" enctype="multipart/form-data" class="register-form">
+            <h1 class="page-title">Register</h1>
+
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="profile_picture">Profile Picture:</label>
+                <input type="file" name="profile_picture" id="profile_picture" class="form-input">
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%;">Register</button>
+            <br><br>
+            <a href="{% url 'login' %}" style="text-decoration: none; width:100%;">Already have an account? Login
+                now</a>
+
+        </form>
+    </div>
+</body>
+
+</html>

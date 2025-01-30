@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Question (admin can only)</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(241, 229, 229);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-control,
+        .custom-select,
+        textarea {
+            margin-bottom: 15px;
+        }
+
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .test-case label {
+            font-weight: bold;
+        }
+
+        .test-case-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .test-case-container .test-case {
+            width: 23%;
+            margin-right: 2%;
+        }
+
+        .removeTestCaseBtn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .removeTestCaseBtn:hover {
+            background-color: #e53935;
+        }
+
+        .code-editor {
+            height: 300px;
+        }
+
+        h1 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1 style="font-family: Verdana, Geneva, Tahoma, sans-serif;font-weight:bold">Create Question</h1>
+    <div class="container" style="background-color: white; width:900px; border-radius: 20px;">
+
+        <form method="POST">
+            {% csrf_token %}
+            <br>
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" class="form-control" name="title" id="title" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea class="form-control" name="description" id="description" rows="4" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="base_code">Base Code:</label>
+                <textarea class="form-control code-editor" name="base_code" id="base_code" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="difficulty">Difficulty Level:</label>
+                <select class="custom-select" name="difficulty" id="difficulty" required>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="problem_tag">Problem Tag:</label>
+                <input type="text" class="form-control" name="problem_tag" id="problem_tag"
+                    placeholder="e.g. Dynamic Programming">
+            </div>
+
+            <div id="testCasesContainer" class="test-case-container">
+                <!-- Initial 4 Test Cases -->
+                {% for i in "1234" %}
+                <div class="test-case" id="testCase_{{ forloop.counter }}">
+                    <h6 style="font-size: 20px;">Test Case {{ forloop.counter }}</h6>
+                    <label>Input:</label>
+                    <textarea class="form-control" name="test_case_input_{{ forloop.counter }}"></textarea><br>
+                    <label>Output:</label>
+                    <textarea class="form-control" name="test_case_output_{{ forloop.counter }}"></textarea><br>
+                    <button type="button" class="removeTestCaseBtn">Remove</button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" class="btn btn-primary" id="addTestCaseBtn">Add Test Case</button><br><br>
+
+            <button type="submit" style="width: 100%;" class="btn btn-success">Submit</button>
+            <br><br>
+        </form>
+    </div>
+
+    <script>
+        let testCaseCount = 4;
+
+        // Add Test Case Logic
+        document.getElementById('addTestCaseBtn').addEventListener('click', () => {
+            testCaseCount++;
+            const container = document.getElementById('testCasesContainer');
+
+            const testCaseDiv = document.createElement('div');
+            testCaseDiv.className = 'test-case';
+            testCaseDiv.id = `testCase_${testCaseCount}`;
+
+            testCaseDiv.innerHTML = `
+            <h4>Test Case ${testCaseCount}</h4>
+            <label>Input:</label>
+            <textarea class="form-control" name="test_case_input_${testCaseCount}"></textarea><br>
+            <label>Expected Output:</label>
+            <textarea class="form-control" name="test_case_output_${testCaseCount}"></textarea><br>
+            <button type="button" class="removeTestCaseBtn">Remove</button>
+        `;
+
+            container.appendChild(testCaseDiv);
+
+            testCaseDiv.querySelector('.removeTestCaseBtn').addEventListener('click', () => {
+                testCaseDiv.remove();
+                updateTestCaseNames();
+            });
+        });
+
+        document.querySelectorAll('.removeTestCaseBtn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.parentElement.remove();
+                updateTestCaseNames();
+            });
+        });
+
+        function updateTestCaseNames() {
+            const testCases = document.querySelectorAll('.test-case');
+            testCaseCount = testCases.length;
+
+            testCases.forEach((testCase, index) => {
+                const currentIndex = index + 1;
+
+                testCase.id = `testCase_${currentIndex}`;
+                testCase.querySelector('h4').textContent = `Test Case ${currentIndex}`;
+                testCase.querySelector('textarea[name^="test_case_input"]').name = `test_case_input_${currentIndex}`;
+                testCase.querySelector('textarea[name^="test_case_output"]').name = `test_case_output_${currentIndex}`;
+            });
+        }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

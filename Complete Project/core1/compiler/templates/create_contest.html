@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Contest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .code-editor {
+            font-family: monospace;
+            white-space: pre;
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 150px;
+            width: 100%;
+        }
+
+        .sample {
+            width: 700px;
+            margin-left: 200px;
+        }
+
+        h1 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="container py-4" style="background-color: rgb(241, 229, 229);">
+    <div class="sample">
+        <h1 class="text-center mb-4">Create Contest</h1>
+        <form method="POST" class="card p-4 shadow-lg">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">Title:</label>
+                <input type="text" name="title" id="title" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label>
+                <textarea name="description" id="description" class="form-control" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="base_code" class="form-label">Base Code:</label>
+                <textarea name="base_code" id="base_code" class="code-editor" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="start_date" class="form-label">Start Date and Time: (Optional)</label>
+                <input type="datetime-local" name="start_date" id="start_date" class="form-control">
+            </div>
+
+            <div class="mb-3">
+                <label for="duration" class="form-label">Duration (in minutes) (Optional):</label>
+                <input type="number" name="duration" id="duration" class="form-control" min="1">
+            </div>
+
+            <div id="testCasesContainer" class="row">
+                {% for i in "1234" %}
+                <div class="col-md-3 test-case" id="testCase_{{ forloop.counter }}">
+                    <div class="card p-3 mb-3">
+                        <h5>Test Case {{ forloop.counter }}</h5>
+                        <label>Input:</label>
+                        <textarea name="test_case_input_{{ forloop.counter }}" class="form-control"></textarea>
+                        <label>Expected Output:</label>
+                        <textarea name="test_case_output_{{ forloop.counter }}" class="form-control"></textarea>
+                        <button type="button" class="btn btn-danger btn-sm mt-2 removeTestCaseBtn">Remove</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" id="addTestCaseBtn" class="btn btn-primary">Add Test Case</button>
+            <button type="submit" class="btn btn-success mt-3">Submit</button>
+        </form>
+    </div>
+    <script>
+        let testCaseCount = 4;
+        document.getElementById('addTestCaseBtn').addEventListener('click', () => {
+            testCaseCount++;
+            const container = document.getElementById('testCasesContainer');
+
+            const testCaseDiv = document.createElement('div');
+            testCaseDiv.className = 'col-md-3 test-case';
+            testCaseDiv.id = `testCase_${testCaseCount}`;
+            testCaseDiv.innerHTML = `
+                <div class="card p-3 mb-3">
+                    <h5>Test Case ${testCaseCount}</h5>
+                    <label>Input:</label>
+                    <textarea name="test_case_input_${testCaseCount}" class="form-control"></textarea>
+                    <label>Expected Output:</label>
+                    <textarea name="test_case_output_${testCaseCount}" class="form-control"></textarea>
+                    <button type="button" class="btn btn-danger btn-sm mt-2 removeTestCaseBtn">Remove</button>
+                </div>`;
+
+            container.appendChild(testCaseDiv);
+            testCaseDiv.querySelector('.removeTestCaseBtn').addEventListener('click', () => {
+                testCaseDiv.remove();
+            });
+        });
+        document.querySelectorAll('.removeTestCaseBtn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('.test-case').remove();
+            });
+        });
+    </script>
+</body>
+
+</html>

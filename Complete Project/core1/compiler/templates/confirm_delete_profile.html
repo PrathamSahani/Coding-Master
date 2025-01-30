@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Profile</title>
+</head>
+<style>
+    body {
+        background-color: rgb(241, 229, 229);
+
+    }
+
+    .page-title {
+        text-align: center;
+        font-size: 2em;
+        color: rgb(123, 114, 114);
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        margin-bottom: 20px;
+    }
+
+    .confirmation-message {
+        text-align: center;
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        color: #333;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+
+    .delete-container {
+        display: flex;
+        width: 600px;
+        margin-left: 400px;
+        border-radius: 10px;
+        background-color: white;
+        flex-direction: column;
+        justify-content: center;
+        color: black;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .delete-form {
+        text-align: center;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .btn-delete {
+        background-color: #e74c3c;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.1em;
+        width: 150px;
+    }
+
+    .btn-delete:hover {
+        background-color: #c0392b;
+    }
+
+    .btn-cancel {
+        background-color: #7f8c8d;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        width: 150px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #95a5a6;
+    }
+</style>
+
+<body>
+    <br><br><br>
+    <div class="delete-container">
+        <h1 class="page-title">Confirm Delete Profile</h1>
+        <p class="confirmation-message">Are you sure you want to delete your profile? This action is irreversible.</p>
+        <form method="POST" class="delete-form">
+            {% csrf_token %}
+            <div class="button-container">
+                <button type="submit" class="btn-delete">Yes, Delete</button>
+                <a href="{% url 'view_profile' %}" class="btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+</body>
+
+</html>
