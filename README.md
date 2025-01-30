@@ -1,6 +1,7 @@
 # Coding-Master
 🚀 Welcome to Codng Mastr! Create contests, practice coding, track progress, join discussions, use the online compiler (Java, Python, C++), and explore the leaderboard and etc. Happy coding! 💻🔥
 
+<a href="https://www.loom.com/share/b74446724e6c4264ab958218546acdc1" > Video Demo </a>
  
  Follow the steps below to set up and run the project.
    Make sure Python is installed on your system. Download it from the [official Python website](https://www.python.org/downloads/).
