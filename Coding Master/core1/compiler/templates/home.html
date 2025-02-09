@@ -432,6 +432,9 @@
     .nav__container img {
         width: 35%;
     }
+    #Per:hover{
+        color: white;
+      }
 </style>
 
 <body>
@@ -447,6 +450,7 @@
                     <a href="{% url 'view_profile' %}" class="btn btn-primary" id="login">Profile</a>
                     <a href="{% url 'leaderboard_view' %}" class="btn btn-primary" id="login">Leaderboard</a>
                     <a href="{% url 'logout' %}" class="btn btn-primary" id="logout">Logout</a>
+                    <a href="{% url 'personal_space' %}" class="btn btn-primary" id="Per">Personal Space</a>
 
                     {% else %}
                     <a href="{% url 'login' %}" class="btn btn-primary" id="login">Login/Register</a>
@@ -545,8 +549,7 @@
             <div class="new-section__right">
                 <h2>Discusson Forum</h2>
                 <p style="margin-left: 20px;">🚀 You can access discussions without logging in, but 💬 comment only if
-                    authenticated ✅. Discuss your
-                    issues with other users 🤝, and enjoy the ability to ✏️ edit or 🗑️ delete your comments. Let’s
+                    authenticated ✅. Discuss your issues with other users 🤝, and enjoy the ability to ✏️ edit or 🗑️ delete your comments, also authenticated user can create Poll, vote and track result. Let’s
                     start solving! 🔧🎯
 
                 </p>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ poll.question }} - Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            background-color: rgb(241, 229, 229);
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .container {
+            margin-top: 30px;
+            width: 80%;
+            max-width: 400px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9;
+        }
+        h2 {
+            margin-top: -19px;
+            text-align: center;
+        }
+        .vote-details {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            display: none;
+            height: 200px;
+            margin-left: 100px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        .toggle-btns {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .toggle-btns button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .toggle-btns button.active {
+            background-color: #007bff;
+        }
+        h2 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    
+<br><br>
+
+<div class="container">
+    <br><br>
+    <h2>{{ poll.question }}</h2>
+
+    <div class="vote-details">
+        <h3 style="font-family: Verdana, Geneva, Tahoma, sans-serif;">Vote Results</h3>
+        {% for option in options %}
+            <p style="font-family: Verdana, Geneva, Tahoma, sans-serif;">{{ option.option_text }}: {{ option.votes }} votes</p>
+        {% endfor %}
+    </div>
+
+    <div class="toggle-btns">
+        <button id="pieChartBtn" onclick="toggleChart('pieChart')" class="active">Pie Chart</button>
+        <button id="barChartBtn" onclick="toggleChart('barChart')">Bar Graph</button>
+    </div>
+
+    <div class="chart-container" id="pieChartContainer">
+        <canvas id="pieChart" width="400" height="400"></canvas>
+    </div>
+    <div class="chart-container" id="barChartContainer">
+        <canvas id="barChart" width="400" height="400"></canvas>
+    </div>
+</div>
+
+<script>
+    var pieData = {
+        labels: [{% for option in options %}"{{ option.option_text }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for option in options %}{{ option.votes }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: ['#FF5733', '#33FF57', '#3357FF', '#FF33FF'],
+        }]
+    };
+
+    var barData = {
+        labels: [{% for option in options %}"{{ option.option_text }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Votes',
+            data: [{% for option in options %}{{ option.votes }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: '#FF5733',
+            borderColor: '#FF5733',
+            borderWidth: 1
+        }]
+    };
+
+    var pieChart = new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: pieData
+    });
+
+    var barChart = new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: barData,
+        options: {
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    function toggleChart(chartType) {
+        if (chartType === 'pieChart') {
+            document.getElementById('pieChartContainer').style.display = 'block';
+            document.getElementById('barChartContainer').style.display = 'none';
+            document.getElementById('pieChartBtn').classList.add('active');
+            document.getElementById('barChartBtn').classList.remove('active');
+        } else {
+            document.getElementById('pieChartContainer').style.display = 'none';
+            document.getElementById('barChartContainer').style.display = 'block';
+            document.getElementById('barChartBtn').classList.add('active');
+            document.getElementById('pieChartBtn').classList.remove('active');
+        }
+    }
+
+    toggleChart('pieChart');
+</script>
+
+</body>
+</html>

@@ -55,13 +55,112 @@
             font-weight: bold;
             font-family: Verdana, Geneva, Tahoma, sans-serif;
         }
+        #describeSolutionForm {
+            display: none;
+            margin-top: 15px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #describeSolutionForm.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body style="background-color: rgb(241, 229, 229);;">
 
-    <div class="container mt-5">
-        <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Back</a>
+        <!-- Folder Selection Modal -->
+        <div id="folderModal" class="modal fade" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Select Folder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <select id="folderSelect" class="form-select">
+                            {% for folder in request.user.folders.all %}
+                            <option value="{{ folder.id }}">{{ folder.name }}</option>
+                            {% empty %}
+                            <option disabled>No folders available. Create one in Personal Space.</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="saveToFolder">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+    <div class="container mt-5">
+        <a href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px; margin-top:16px;">Back</a>
+        <button class="btn btn-success save-question-btn" data-question-id="{{ question.id }}" style="margin-top:16px;">
+            Choose Folder
+        </button>
+
+        {% if question.solutionexplanation_set.exists %}
+        <a href="{% url 'all_solutions' question.id %}" class="btn btn-danger mt-3">All Solutions</a>
+        {% endif %}
+
+        {% if user_has_solution %}
+        <button id="describeSolutionBtn" class="btn btn-secondary mt-3">Describe Solution</button>
+
+        <div id="describeSolutionForm" style="display: none; margin-top: 15px;">
+            <form method="POST" action="{% url 'submit_explanation' question.id %}">
+                {% csrf_token %}
+                <textarea name="explanation" class="form-control" rows="4"
+                    placeholder="Explain your solution..."></textarea>
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="form-check-input" id="includeCodeCheckbox">
+                    <label class="form-check-label" for="includeCodeCheckbox">Include Code with Explanation</label>
+                </div>
+
+                <input type="hidden" name="code_submission" id="hiddenCode">
+
+                <button type="submit" class="btn btn-success mt-2" id="submitExplanationBtn">Submit</button>
+            </form>
+
+        </div>
+
+        <script>
+            document.getElementById("describeSolutionBtn").addEventListener("click", function () {
+                const form = document.getElementById("describeSolutionForm");
+
+                if (form.classList.contains("show")) {
+                    form.classList.remove("show");
+                    setTimeout(() => { form.style.display = "none"; }, 300);
+                } else {
+                    form.style.display = "block";
+                    setTimeout(() => { form.classList.add("show"); }, 10);
+                }
+            });
+            const includeCodeCheckbox = document.getElementById("includeCodeCheckbox");
+            const submitBtn = document.getElementById("submitExplanationBtn");
+            includeCodeCheckbox.addEventListener('change', function () {
+                if (this.checked) {
+                    submitBtn.textContent = "Submit with Code";
+                } else {
+                    submitBtn.textContent = "Submit";
+                }
+            });
+            document.querySelector("form").addEventListener("submit", function (event) {
+                if (includeCodeCheckbox.checked) {
+                    const codeContent = editor.getValue();  
+                    document.getElementById("hiddenCode").value = codeContent;  
+                } else {
+                    document.getElementById("hiddenCode").value = "";  
+                }
+            });
+
+        </script>
+        {% endif %}
+
+
+        <br><br>
         <h1 class="text-center mb-4">{{ question.title }}</h1>
 
         <div class="card mb-4">
@@ -249,5 +348,34 @@
             });
         });
     </script>
+
+    <script>
+        document.querySelectorAll('.save-question-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                let questionId = this.getAttribute('data-question-id');
+                document.getElementById('saveToFolder').setAttribute('data-question-id', questionId);
+                new bootstrap.Modal(document.getElementById('folderModal')).show();
+            });
+        });
+        
+        document.getElementById('saveToFolder').addEventListener('click', function() {
+            let questionId = this.getAttribute('data-question-id');
+            let folderId = document.getElementById('folderSelect').value;
+        
+            fetch("{% url 'save_question_to_folder' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `folder_id=${folderId}&question_id=${questionId}`
+            }).then(response => response.json()).then(data => {
+                alert(data.message);
+                document.getElementById('folderModal').modal('hide');
+            });
+        });
+
+        
+        </script>
 </body>
 </html>

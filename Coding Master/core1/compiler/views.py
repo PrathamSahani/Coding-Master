@@ -16,6 +16,8 @@ from datetime import timedelta
 from django.shortcuts import render, redirect
 from django.contrib.auth import logout
 from datetime import timedelta
+from .models import PersonalFolder, SavedQuestion, Question
+from .models import SolutionExplanation, Question, SolutionVote
 
 
 
@@ -32,20 +34,98 @@ def home(request):
 def home_question_view(request):
     questions = Question.objects.all()
 
+    # Filter logic
     difficulty_filter = request.GET.get('difficulty', '')
     tag_filter = request.GET.get('tag', '')
 
-    # Apply filters if values exist
     if difficulty_filter:
         questions = questions.filter(difficulty=difficulty_filter)
     if tag_filter:
         questions = questions.filter(problem_tag__icontains=tag_filter)
 
+    # Fetch favorite questions for the logged-in user
+    favorite_folder, created = PersonalFolder.objects.get_or_create(user=request.user, name="Favorite")
+    favorite_questions_ids = SavedQuestion.objects.filter(folder=favorite_folder).values_list('question_id', flat=True)
+
     return render(request, 'home_question.html', {
         'questions': questions,
         'difficulty_filter': difficulty_filter,
-        'tag_filter': tag_filter
+        'tag_filter': tag_filter,
+        'favorite_questions_ids': favorite_questions_ids
     })
+
+
+    
+@login_required
+def submit_explanation(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+
+    if request.method == "POST":
+        explanation_text = request.POST.get("explanation")
+        code_text = request.POST.get("code_submission")  
+
+        if explanation_text or code_text:
+            SolutionExplanation.objects.create(
+                user=request.user, 
+                question=question, 
+                explanation=explanation_text,
+                code_submission=code_text  
+            )
+            return redirect("all_solutions", question_id=question.id)
+
+    return render(request, "all_solutions.html", {"question": question})
+
+
+@login_required
+def all_solutions(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+    explanations = SolutionExplanation.objects.filter(question=question)
+    explanations = sorted(explanations, key=lambda exp: exp.net_likes(), reverse=True)
+
+    return render(request, "all_solutions.html", {
+        "question": question, 
+        "explanations": explanations
+    })
+
+# like and displike solution 1/user 
+@login_required
+def vote_explanation(request, explanation_id, vote_type):
+    explanation = get_object_or_404(SolutionExplanation, id=explanation_id)
+    user_vote, created = SolutionVote.objects.get_or_create(user=request.user, solution=explanation)
+
+    if not created:
+        if user_vote.vote_type == vote_type:
+            user_vote.delete()
+        else:
+            user_vote.vote_type = vote_type
+            user_vote.save()
+    else:
+        user_vote.vote_type = vote_type
+        user_vote.save()
+
+    explanation.likes = explanation.votes.filter(vote_type='like').count()
+    explanation.dislikes = explanation.votes.filter(vote_type='dislike').count()
+    explanation.save()
+
+    return JsonResponse({
+        "likes": explanation.likes,
+        "dislikes": explanation.dislikes,
+        "net_likes": explanation.net_likes(),
+    })
+    
+# delete solution ( only creator can )
+@login_required
+def delete_explanation(request, explanation_id):
+    explanation = get_object_or_404(SolutionExplanation, id=explanation_id, user=request.user)
+    
+    if request.method == "POST":
+        question_id = explanation.question.id  
+        explanation.delete()
+        return redirect("all_solutions", question_id=question_id)
+    
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
     
 # admin 
 def is_admin(user):
@@ -97,6 +177,95 @@ def admin_logout(request):
     logout(request)
     request.session.flush()
     return redirect("admin_login")
+
+@login_required
+def personal_space_view(request):
+    favorite_folder, created = PersonalFolder.objects.get_or_create(user=request.user, name="Favorite")
+    folders = PersonalFolder.objects.filter(user=request.user)
+    return render(request, 'personal_space.html', {'folders': folders})
+
+@login_required
+def delete_folder(request):
+    if request.method == "POST":
+        folder_id = request.POST.get('folder_id')
+        folder = get_object_or_404(PersonalFolder, id=folder_id, user=request.user)
+
+        if folder.name == "Favorite":
+            return JsonResponse({'error': 'You cannot delete the Favorite folder!'}, status=400)
+
+        folder.saved_questions.all().delete()
+        folder.delete()
+        return JsonResponse({'message': 'Folder deleted successfully!', 'status': 'deleted'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@login_required
+def toggle_favorite(request):
+    if request.method == "POST":
+        question_id = request.POST.get("question_id")
+        question = get_object_or_404(Question, id=question_id)
+        
+        
+        favorite_folder, created = PersonalFolder.objects.get_or_create(user=request.user, name="Favorite")
+
+        # Check if the question is already saved in the "Favorite" folder
+        saved_question = SavedQuestion.objects.filter(folder=favorite_folder, question=question).first()
+
+        if saved_question:
+            saved_question.delete()
+            return JsonResponse({"status": "removed"})
+        else:
+            SavedQuestion.objects.create(folder=favorite_folder, question=question)
+            return JsonResponse({"status": "added"})
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+@login_required
+def create_folder(request):
+    if request.method == "POST":
+        folder_name = request.POST.get('folder_name')
+        if folder_name:
+            PersonalFolder.objects.create(user=request.user, name=folder_name)
+        return redirect('personal_space')
+
+
+@login_required
+def save_question_to_folder(request):
+    if request.method == "POST":
+        folder_id = request.POST.get('folder_id')
+        question_id = request.POST.get('question_id')
+        
+        folder = get_object_or_404(PersonalFolder, id=folder_id, user=request.user)
+        question = get_object_or_404(Question, id=question_id)
+        
+        # Check if the question already exists in the folder
+        if SavedQuestion.objects.filter(folder=folder, question=question).exists():
+            return JsonResponse({'message': 'This question is already in the selected folder!'}, status=400)
+
+        SavedQuestion.objects.create(folder=folder, question=question)
+        return JsonResponse({'message': 'Question added successfully!'})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@login_required
+def remove_question_from_folder(request):
+    if request.method == "POST":
+        folder_id = request.POST.get('folder_id')
+        question_id = request.POST.get('question_id')
+
+        folder = get_object_or_404(PersonalFolder, id=folder_id, user=request.user)
+        question = get_object_or_404(Question, id=question_id)
+
+        saved_question = SavedQuestion.objects.filter(folder=folder, question=question).first()
+        if saved_question:
+            saved_question.delete()
+            return JsonResponse({'message': 'Question removed successfully!', 'status': 'removed'})
+        else:
+            return JsonResponse({'error': 'Question not found in folder'}, status=400)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 
 def create_question_view(request):
@@ -151,6 +320,8 @@ def participate_question_view(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     test_cases = TestCase_Question.objects.filter(question=question)
 
+    user_has_solution = Dashboard.objects.filter(user=request.user, question=question).exists()
+
     if request.method == 'POST':
         language = request.POST.get('language')
         code = request.POST.get('code')
@@ -184,10 +355,16 @@ def participate_question_view(request, question_id):
                 code=code,
                 status="Pass" if passed else "Fail"
             )
+            user_has_solution = True  # Update the flag after submission
+
 
         return JsonResponse({'results': results})
 
-    return render(request, 'participate_question.html', {'question': question, 'test_cases': test_cases})
+    return render(request, 'participate_question.html', {
+        'question': question, 
+        'test_cases': test_cases,
+        'user_has_solution': user_has_solution  
+})
 
 
 # user dashboard
@@ -569,6 +746,112 @@ def view_user_profile(request, username):
     user = get_object_or_404(User, username=username)
     user_profile = get_object_or_404(UserProfile, user=user)
     return render(request, 'view_user_profile.html', {'user': user, 'profile': user_profile})
+
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import Poll, PollOption
+from datetime import timedelta
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from .models import Poll, PollOption
+from django.contrib import messages
+
+from datetime import timedelta
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
+
+
+@login_required
+def create_poll(request):
+    if request.method == 'POST':
+        question = request.POST.get('question')
+        duration_str = request.POST.get('duration')
+
+        try:
+            duration = int(duration_str)
+            if duration <= 0 or duration > 60:  
+                messages.error(request, "Duration must be between 1 minute and 1 hour.")
+                return redirect('create_poll')
+
+            duration = timedelta(minutes=duration)
+
+            poll = Poll.objects.create(
+                question=question,
+                duration=duration,
+                creator=request.user
+            )
+
+            options = request.POST.getlist('options')
+            for option in options:
+                PollOption.objects.create(poll=poll, option_text=option)
+
+            return redirect('display_poll')
+
+        except (ValueError, OverflowError):
+            messages.error(request, "Invalid duration value.")
+            return redirect('create_poll')
+
+    return render(request, 'create_poll.html')
+
+
+def display_polls(request):
+    polls = Poll.objects.all()
+    current_time = timezone.now()
+
+    for poll in polls:
+        if poll.duration:
+            poll.is_active = (poll.created_at + poll.duration) > current_time
+        else:
+            poll.is_active = False  
+
+        poll.is_creator = request.user.is_authenticated and poll.creator == request.user  
+
+    return render(request, 'display_poll.html', {'polls': polls})
+
+
+@login_required
+def vote_poll(request, poll_id):
+    poll = get_object_or_404(Poll, pk=poll_id)
+    
+    if request.user in poll.voted_by.all():
+        messages.error(request, "You have already voted in this poll.")
+        return redirect('display_poll')
+
+    if request.method == 'POST':
+        selected_option_id = request.POST.get('option')
+        selected_option = get_object_or_404(PollOption, pk=selected_option_id)
+
+        if request.user in selected_option.voted_by.all():
+            messages.error(request, "You have already voted in this poll.")
+            return redirect('display_poll')
+        
+
+        selected_option.votes += 1
+        selected_option.voted_by.add(request.user)
+        selected_option.save()
+
+        messages.success(request, "Your vote has been recorded.")
+        return redirect('display_poll')
+
+    return redirect('display_poll')
+
+@login_required
+def delete_poll(request, poll_id):
+    poll = get_object_or_404(Poll, pk=poll_id)
+
+    if poll.creator != request.user:
+        messages.error(request, "You are not allowed to delete this poll.")
+        return redirect('display_poll')
+
+    poll.delete()
+    messages.success(request, "Poll deleted successfully.")
+    return redirect('display_poll')
+
+def poll_result(request, poll_id):
+    poll = get_object_or_404(Poll, pk=poll_id)
+    options = poll.options.all()
+    return render(request, 'poll_result.html', {'poll': poll, 'options': options})
 
 
 # register user

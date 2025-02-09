@@ -2,8 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from django.db import models
-
 class CustomAdmin(models.Model):
     username = models.CharField(max_length=150, unique=True, default="admin")
     password = models.CharField(max_length=150, default="admin123")  
@@ -61,9 +59,6 @@ class Submission(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.contest.title}"
 
-from django.db import models
-from django.contrib.auth.models import User
-
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
@@ -112,7 +107,6 @@ class Dashboard(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.problem_title}"
 
-from django.db import models
 
 class CodeSubmission(models.Model):
     LANGUAGE_CHOICES = [
@@ -126,5 +120,65 @@ class CodeSubmission(models.Model):
     result = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class Poll(models.Model):
+    question = models.CharField(max_length=255)
+    duration = models.DurationField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)  
+    voted_by = models.ManyToManyField(User, related_name='voted_polls', blank=True)
+
+    
+    def __str__(self):
+        return self.question
+
+class PollOption(models.Model):
+    poll = models.ForeignKey(Poll, related_name='options', on_delete=models.CASCADE)
+    option_text = models.CharField(max_length=255)
+    votes = models.PositiveIntegerField(default=0)
+    voted_by = models.ManyToManyField(User, blank=True)  
+
+    def __str__(self):
+        return self.option_text
 
 
+class PersonalFolder(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='folders')
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class SavedQuestion(models.Model):
+    folder = models.ForeignKey(PersonalFolder, on_delete=models.CASCADE, related_name='saved_questions')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.folder.name} - {self.question.title}"
+
+
+class SolutionExplanation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    explanation = models.TextField()
+    code_submission = models.TextField(blank=True, null=True)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.IntegerField(default=0)
+    dislikes = models.IntegerField(default=0)
+
+    def net_likes(self):
+        return self.likes - self.dislikes
+
+
+class SolutionVote(models.Model):
+    VOTE_CHOICES = [
+        ('like', 'Like'),
+        ('dislike', 'Dislike'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    solution = models.ForeignKey(SolutionExplanation, on_delete=models.CASCADE, related_name='votes')
+    vote_type = models.CharField(max_length=7, choices=VOTE_CHOICES)
+
+    class Meta:
+        unique_together = ('user', 'solution')  

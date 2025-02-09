@@ -1,6 +1,6 @@
  
  Follow the steps below to set up and run the project.
-   Make sure Python is installed on your system. Download it from the [official Python website](https://www.python.org/downloads/).
+Make sure Python is installed on your system. Download it from the [official Python website](https://www.python.org/downloads/).
 
    ```bash
    # Check if Python is installed
@@ -41,7 +41,6 @@ Move to the main `core1` directory where the `manage.py` file is located:
 ### Migrate the Database
 Apply database migrations using the following commands:
 ```bash
-python manage.py makemigrations
 python manage.py makemigrations compiler
 python manage.py migrate
 ```
@@ -50,3 +49,10 @@ python manage.py migrate
 Finally, start the Django development server:
 ```bash
 python manage.py runserver
+```
+
+### Admin Crediantials
+Admin can log in using the default credentials: 
+Username: admin 
+Password: admin123
+

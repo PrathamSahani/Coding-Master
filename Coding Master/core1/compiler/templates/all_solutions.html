@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solutions</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(241, 229, 229);
+            padding: 20px;
+        }
+        h3 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            padding: 5px; /* Reduced padding */
+            margin-bottom: 15px; /* Increased margin */
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            display: flex;
+            background-color: white;
+            justify-content: space-between;
+            align-items: center;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            font-weight: bold;
+            padding-bottom: 0.5rem; /* Adjusted spacing */
+        }
+        .text-muted {
+            font-size: 0.9rem;
+        }
+        .btn {
+            margin-right: 10px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+        }
+        .code-block {
+            display: none;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .card-body {
+            padding: 10px; 
+
+        }
+    </style>
+</head>
+
+<body>
+    <h3 class="text-center">Solutions for {{ question.title }}</h3>
+    <a style="margin-left: 140px;" href="{% url 'home' %}" class="btn btn-primary" style="margin-left: 30px;">Home</a>
+
+    <div class="container">
+        {% for explanation in explanations %}
+        <div class="card mt-3 shadow-sm">
+            <div class="card-header">
+                <span>{{ explanation.user.username }}</span>
+                {% if explanation.user == request.user %}
+                <form method="POST" action="{% url 'delete_explanation' explanation.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to delete this solution?');">
+                        Delete
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ explanation.explanation }}</p>
+                {% if explanation.code_submission %}
+                <a href="#" onclick="toggleCode({{ explanation.id }}); return false;">See Code</a>
+                <pre id="code-{{ explanation.id }}" class="code-block"><code>{{ explanation.code_submission }}</code></pre>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div>
+                        <button onclick="vote({{ explanation.id }}, 'like')"
+                            class="btn {% if explanation.user_vote and explanation.user_vote.vote_type == 'like' %}btn-success{% else %}btn-outline-success{% endif %} btn-sm">
+                            👍 Like <span class="ml-1">{{ explanation.likes }}</span>
+                        </button>
+                        <button onclick="vote({{ explanation.id }}, 'dislike')"
+                            class="btn {% if explanation.user_vote and explanation.user_vote.vote_type == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm">
+                            👎 Dislike <span class="ml-1">{{ explanation.dislikes }}</span>
+                        </button>
+                    </div>
+                    {% if explanation.user_vote %}
+                    <span class="text-muted">Your vote: {{ explanation.user_vote.vote_type }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function vote(explanationId, type) {
+            fetch(`/vote-explanation/${explanationId}/${type}/`)
+                .then(response => response.json())
+                .then(data => {
+                    location.reload();
+                });
+        }
+        
+        function toggleCode(id) {
+            var codeBlock = document.getElementById('code-' + id);
+            if (codeBlock.style.display === 'none' || codeBlock.style.display === '') {
+                codeBlock.style.display = 'block';
+            } else {
+                codeBlock.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

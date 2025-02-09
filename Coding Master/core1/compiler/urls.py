@@ -36,6 +36,24 @@ urlpatterns = [
     path('admin_home/', views.admin_home, name='admin_home'),
     path('admin_question_view/', views.admin_question_view, name='admin_question_view'),
     path('admin_delete/<int:question_id>/', views.delete_question_view, name='delete_question'),
+    
+    path('poll_create/', views.create_poll, name='create_poll'),
+    path('poll/', views.display_polls, name='display_poll'),
+    path('vote/<int:poll_id>/', views.vote_poll, name='vote_poll'),
+    path('result/<int:poll_id>/', views.poll_result, name='poll_result'),
+    path('delete_poll/<int:poll_id>/', views.delete_poll, name='delete_poll'),
+    
+    path('personal-space/', views.personal_space_view, name='personal_space'),
+    path('create-folder/', views.create_folder, name='create_folder'),
+    path('toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
+    path('save-question/', views.save_question_to_folder, name='save_question_to_folder'),
+    path('remove_question/', views.remove_question_from_folder, name='remove_question_from_folder'),
+    path('delete_folder/', views.delete_folder, name="delete_folder"),
+    
+    path("submit-explanation/<int:question_id>/", views.submit_explanation, name="submit_explanation"),
+    path("all-solutions/<int:question_id>/", views.all_solutions, name="all_solutions"),
+    path("vote-explanation/<int:explanation_id>/<str:vote_type>/", views.vote_explanation, name="vote_explanation"),
+    path('delete-explanation/<int:explanation_id>/', views.delete_explanation, name='delete_explanation'),
 
 ]
 if settings.DEBUG:

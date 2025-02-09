@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Polls</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(241, 229, 229);
+                        padding: 20px;
+        }
+        .poll-container {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            max-width: 800px;
+            margin: 10px auto;
+        }
+        .poll-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .poll-duration {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+        .poll-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .vote-btn, .result-btn, .delete-btn {
+            background-color: #008CBA;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .vote-btn:hover, .result-btn:hover, .delete-btn:hover {
+            background-color: #007b8d;
+        }
+        .result-btn {
+            background-color: #f39c12;
+        }
+        .result-btn:hover {
+            background-color: #e67e22;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        form {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f4f4f4;
+            border-radius: 5px;
+        }
+        .form-options {
+            margin-bottom: 15px;
+        }
+        .form-options input {
+            margin-right: 10px;
+        }
+        .form-buttons {
+            text-align: center;
+        }
+        .form-buttons button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .form-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        .form-buttons button:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(72, 178, 87, 0.5);
+        }
+        h1 {
+            color: rgb(123, 114, 114);
+            font-weight: bold;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            text-align: center;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+            text-decoration: none;
+        }
+
+        .no-polls {
+            text-align: center;
+            color: #555;
+            font-size: 20px;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 >All Polls</h1>
+
+    <a href="{% url 'home' %}" class="btn btn-primary back-btn">Back</a>
+  <br><br>
+  {% if polls %}
+
+    {% for poll in polls %}
+    <div class="poll-container">
+        <div class="poll-buttons">
+            {% if poll.is_active %}
+
+            {% if user.is_authenticated %}
+                    {% if user in option.voted_by.all %}
+                    <p><em>You have already voted.</em></p>
+                        <script>
+                            document.querySelectorAll('input[type="radio"]').forEach((radio) => {
+                                radio.disabled = true;
+                            });
+                        </script>
+                {% else %}
+                <button class="vote-btn" onclick="togglePollForm('form-{{ poll.id }}')">View Poll</button>
+            {% endif %}
+        {% else %}
+            <p><em>Login to vote.</em></p>
+        {% endif %}
+        
+                
+            {% else %}
+                <p><em>The poll is no longer active.</em></p>
+            {% endif %}
+            
+            {% if user.is_authenticated and poll.is_creator %}
+                <form method="POST" action="{% url 'delete_poll' poll.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="delete-btn" type="submit">Delete</button>
+                </form>
+            {% endif %}
+    
+            <a href="{% url 'poll_result' poll_id=poll.id %}">
+                <button class="result-btn">Results</button>
+            </a>
+        </div>
+
+        <p class="poll-title">{{ poll.question }}</p>
+        <p class="poll-duration">Duration: {{ poll.duration }} minutes</p>
+
+        <form id="form-{{ poll.id }}" method="POST" action="{% url 'vote_poll' poll_id=poll.id %}">
+            {% csrf_token %}
+            <div class="form-options">
+                {% for option in poll.options.all %}
+                    <input type="radio" name="option" value="{{ option.id }}" required> {{ option.option_text }}<br>
+                {% endfor %}
+            </div>
+            <div class="form-buttons">
+                <button type="submit">Submit Vote</button>
+            </div>
+        </form>
+    </div>
+    {% endfor %}
+    {% else %}
+        <div class="no-polls">No polls yet.</div>
+    {% endif %}
+
+
+    <script>
+        function togglePollForm(formId) {
+            var form = document.getElementById(formId);
+            form.style.display = (form.style.display === 'block') ? 'none' : 'block';
+        }
+
+        
+    </script>
+
+</body>
+</html>
