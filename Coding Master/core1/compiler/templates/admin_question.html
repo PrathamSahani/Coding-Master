@@ -64,7 +64,7 @@
         <a href="{% url 'create_question' %}" class="btn btn-primary mb-3">Create Question</a>
 
         <div class="filter-container">
-            <form method="GET" action="{% url 'home_question' %}" class="row g-2">
+            <form method="GET" action="{% url 'admin_question_view' %}" class="row g-2">
                 <div class="col-md-4">
                     <label for="difficulty" class="form-label">Filter by Difficulty:</label>
                     <select name="difficulty" id="difficulty" class="form-select">
